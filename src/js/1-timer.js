@@ -7,36 +7,88 @@ import iziToast from 'izitoast';
 // Додатковий імпорт стилів
 import 'izitoast/dist/css/iziToast.min.css';
 
-const options = {
+const selectDate = document.getElementById('datetime-picker');
+const btn = document.querySelector('[data-start]');
+const daysValue = document.querySelector('[data-days]');
+const hoursValue = document.querySelector('[data-hours]');
+const minutesValue = document.querySelector('[data-minutes]');
+const secondsValue = document.querySelector('[data-seconds]');
+
+btn.disabled = true;
+
+let userSelectedDate = null;
+let timerId = null;
+
+const pickerOptions = {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    console.log(selectedDates[0]);
+    if (selectedDates[0] <= new Date()) {
+      userSelectedDate = null;
+      btn.disabled = true;
+      iziToast.warning({
+        message: 'Please choose a date in the future',
+        position: 'topRight',
+        color: 'red',
+      });
+      return;
+    }
+
+    userSelectedDate = selectedDates[0];
+    btn.disabled = false;
   },
 };
 
-const selectDate = document.getElementById('datetime-picker');
-const btn = document.querySelector('[data-start]');
-btn.disabled = true;
+flatpickr(selectDate, pickerOptions);
 
-flatpickr(selectDate, options);
+btn.addEventListener('click', () => {
+  if (!userSelectedDate) {
+    return;
+  }
+
+  btn.disabled = true;
+  selectDate.disabled = true;
+
+  updateTimerValues(convertMs(userSelectedDate - Date.now()));
+
+  timerId = setInterval(() => {
+    const diff = userSelectedDate - Date.now();
+
+    if (diff <= 0) {
+      clearInterval(timerId);
+      timerId = null;
+      updateTimerValues({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      selectDate.disabled = false;
+      userSelectedDate = null;
+      return;
+    }
+
+    updateTimerValues(convertMs(diff));
+  }, 1000);
+});
+
+function updateTimerValues({ days, hours, minutes, seconds }) {
+  daysValue.textContent = addLeadingZero(days);
+  hoursValue.textContent = addLeadingZero(hours);
+  minutesValue.textContent = addLeadingZero(minutes);
+  secondsValue.textContent = addLeadingZero(seconds);
+}
+
+function addLeadingZero(value) {
+  return String(value).padStart(2, '0');
+}
 
 function convertMs(ms) {
-  // Number of milliseconds per unit of time
   const second = 1000;
   const minute = second * 60;
   const hour = minute * 60;
   const day = hour * 24;
 
-  // Remaining days
   const days = Math.floor(ms / day);
-  // Remaining hours
   const hours = Math.floor((ms % day) / hour);
-  // Remaining minutes
   const minutes = Math.floor(((ms % day) % hour) / minute);
-  // Remaining seconds
   const seconds = Math.floor((((ms % day) % hour) % minute) / second);
 
   return { days, hours, minutes, seconds };

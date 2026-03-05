@@ -2,6 +2,8 @@
 @import url('./reset.css');
 @import url('./container.css');
 @import url('./back-link.css');
+
 body {
   font-family: 'Montserrat', sans-serif;
+  color: #2e2f42;
 }
